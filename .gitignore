@@ -1,0 +1,7 @@
+bert_training_cache/
+models/
+bert_demo_results/checkpoints/
+bert_demo_results/logs/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
