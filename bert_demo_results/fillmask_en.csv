@@ -1,0 +1,9 @@
+Context,Description,Top-1,Top-2,Top-3
+The cat is sitting on the [MASK].,Сидит на поверхности,floor (33.7%),couch (12.9%),bed (8.8%)
+The cat is drinking [MASK] from the bowl.,Пьёт жидкость,water (55.1%),milk (12.4%),something (6.9%)
+I went to the [MASK] to buy groceries.,Поход за продуктами,store (80.8%),grocery (3.0%),supermarket (2.9%)
+The [MASK] is shining brightly in the sky.,Небесное светило,sun (60.5%),moon (35.9%),sunset (0.6%)
+She gave me a [MASK] look.,Эмоциональный взгляд,dirty (5.9%),strange (5.0%),knowing (4.5%)
+The stock market [MASK] sharply yesterday.,Движение рынка,fell (44.2%),rose (20.6%),dropped (7.4%)
+He tried to [MASK] his feelings.,Скрывать эмоции,hide (60.5%),control (4.1%),conceal (2.8%)
+The movie was absolutely [MASK]!,Оценка фильма,fantastic (11.2%),amazing (10.8%),awesome (9.6%)
