@@ -14,11 +14,10 @@ from transformers import (
 )
 from datasets import load_dataset
 
-# ========================= НАСТРОЙКИ =========================
+
 hf_logging.set_verbosity_error()
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# Стиль графиков
 available = plt.style.available
 if 'seaborn-v0_8-darkgrid' in available:
     plt.style.use('seaborn-v0_8-darkgrid')
@@ -28,33 +27,19 @@ else:
     plt.style.use('default')
 sns.set_palette("pastel")
 
-# Папка для результатов (только лёгкие файлы: картинки, CSV)
 RESULTS_DIR = "bert_demo_results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 os.makedirs(os.path.join(RESULTS_DIR, "attention_plots"), exist_ok=True)
 
-# Папка для тяжёлых данных обучения (не включается в Git)
 CACHE_DIR = "bert_training_cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-# Создаём .gitignore, чтобы Git не трогал тяжёлые папки и кэш
-gitignore_content = f"""{CACHE_DIR}/
-{RESULTS_DIR}/checkpoints/
-{RESULTS_DIR}/logs/
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
-"""
-with open(".gitignore", "w") as f:
-    f.write(gitignore_content)
-print("✓ Файл .gitignore создан (тяжёлые папки исключены из Git)")
-
-DEVICE = -1  # CPU, для GPU поставьте 0
+DEVICE = -1
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 torch.manual_seed(RANDOM_SEED)
 
-# ========================= ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =========================
+
 def print_header(text, char="=", width=70):
     print("\n" + char * width)
     padding = (width - len(text) - 2) // 2
@@ -82,7 +67,6 @@ def plot_attention_heatmap(tokens, attentions, layer=0, head=0, save_path=None):
         print(f"[OK] Attention heatmap сохранён: {save_path}")
     plt.close()
 
-# ========================= 1. FILL-MASK (ENGLISH) =========================
 def run_fill_mask_en():
     print_header("1. FILL-MASK (английский)")
     fill_pipe = pipeline("fill-mask", model="bert-base-uncased", device=DEVICE)
@@ -113,7 +97,6 @@ def run_fill_mask_en():
     save_table(df, os.path.join(RESULTS_DIR, "fillmask_en.csv"))
     return df
 
-# ========================= 2. FILL-MASK (RUSSIAN) =========================
 def run_fill_mask_ru():
     print_header("2. FILL-MASK (русский)")
     fill_pipe = pipeline("fill-mask", model="bert-base-multilingual-cased", device=DEVICE)
@@ -144,7 +127,6 @@ def run_fill_mask_ru():
     save_table(df, os.path.join(RESULTS_DIR, "fillmask_ru.csv"))
     return df
 
-# ========================= 3. FINE-TUNING НА IMDb =========================
 def prepare_imdb_data(sample_train=800, sample_test=200):
     dataset = load_dataset("imdb")
     train_subset = dataset["train"].shuffle(seed=RANDOM_SEED).select(range(sample_train))
@@ -177,7 +159,6 @@ def run_finetuning():
     
     model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
     
-    # ВСЕ тяжёлые файлы уходят в CACHE_DIR (не в RESULTS_DIR)
     training_args = TrainingArguments(
         output_dir=os.path.join(CACHE_DIR, "checkpoints"),
         num_train_epochs=3,
@@ -191,7 +172,7 @@ def run_finetuning():
         load_best_model_at_end=True,
         metric_for_best_model="accuracy",
         fp16=False,
-        save_total_limit=1,          # хранить только лучший чекпоинт
+        save_total_limit=1,
     )
     
     trainer = Trainer(
@@ -222,7 +203,6 @@ def run_finetuning():
     
     return trainer, test_tok, true_labels, pred_labels, (test_acc, test_f1, test_prec, test_rec)
 
-# ========================= 4. ВИЗУАЛИЗАЦИИ =========================
 def plot_accuracy_comparison(baseline, finetuned_acc, save_path):
     fig, ax = plt.subplots(figsize=(6,5))
     bars = ax.bar(["Случайное угадывание", "BERT fine-tuned"], [baseline, finetuned_acc],
@@ -306,7 +286,6 @@ def plot_prediction_confidence(probs, true_labels, save_path):
     plt.close()
     print(f"[OK] Распределение уверенности сохранено: {save_path}")
 
-# ========================= 5. ВИЗУАЛИЗАЦИЯ ВНИМАНИЯ =========================
 def visualize_attention(model, tokenizer, text, save_dir):
     model.eval()
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
@@ -322,7 +301,6 @@ def visualize_attention(model, tokenizer, text, save_dir):
                            save_path=os.path.join(save_dir, "attention_first_layer_head0.png"))
     print(f"[OK] Визуализация внимания сохранена в {save_dir}")
 
-# ========================= 6. ПРИМЕРЫ ПРЕДСКАЗАНИЙ =========================
 def show_prediction_examples(model, tokenizer, dataset, num_examples=15):
     print_header("ПРИМЕРЫ ПРЕДСКАЗАНИЙ НА ТЕСТОВЫХ ОТЗЫВАХ")
     sample_texts = dataset["text"][:num_examples]
@@ -347,7 +325,6 @@ def show_prediction_examples(model, tokenizer, dataset, num_examples=15):
     save_table(df, os.path.join(RESULTS_DIR, "predictions_examples.csv"))
     return df
 
-# ========================= 7. ОСНОВНАЯ ФУНКЦИЯ =========================
 def main():
     print_header("BERT ДЕМОНСТРАЦИЯ: ДВУНАПРАВЛЕННОСТЬ И ТОНКАЯ НАСТРОЙКА")
     
@@ -377,7 +354,7 @@ def main():
     _, test_raw = prepare_imdb_data(sample_train=10, sample_test=20)
     show_prediction_examples(trainer.model, tokenizer, test_raw, num_examples=15)
     
-    print_header("ИТОГОВЫЙ ОТЧЁТ ДЛЯ ПРЕЗЕНТАЦИИ")
+    print_header("ИТОГ")
     print(f"""
 [OK] Fill-mask (англ): модель угадывает слова по контексту.
    'sitting on [MASK]' → floor (33.7%), couch (12.9%)
@@ -395,9 +372,7 @@ def main():
 [OK] Все графики и таблицы в папке '{RESULTS_DIR}/'
 [OK] Тяжёлые файлы чекпоинтов и логов в папке '{CACHE_DIR}/' (исключены из Git)
 
-Рекомендации для презентации: см. скриншоты из RESULTS_DIR.
 """)
-    print("\n[DONE] Код выполнен. Теперь можно коммитить только лёгкие файлы.")
 
 if __name__ == "__main__":
     main()
